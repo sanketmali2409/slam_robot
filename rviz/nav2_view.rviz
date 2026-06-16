@@ -1,0 +1,68 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+
+Visualization Manager:
+  Displays:
+    - Class: rviz_default_plugins/Map
+      Name: Map
+      Topic:
+        Value: /map
+      Alpha: 0.7
+      Enabled: true
+
+    - Class: rviz_default_plugins/Map
+      Name: LocalCostmap
+      Topic:
+        Value: /local_costmap/costmap
+      Alpha: 0.4
+      Enabled: true
+
+    - Class: rviz_default_plugins/Map
+      Name: GlobalCostmap
+      Topic:
+        Value: /global_costmap/costmap
+      Alpha: 0.4
+      Enabled: false
+
+    - Class: rviz_default_plugins/LaserScan
+      Name: LaserScan
+      Topic:
+        Value: /scan
+      Size (m): 0.05
+      Color: 255; 0; 0
+      Enabled: true
+
+    - Class: rviz_default_plugins/Path
+      Name: GlobalPath
+      Topic:
+        Value: /plan
+      Color: 0; 255; 0
+      Enabled: true
+
+    - Class: rviz_default_plugins/Path
+      Name: LocalPath
+      Topic:
+        Value: /local_plan
+      Color: 0; 0; 255
+      Enabled: true
+
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: false
+
+    - Class: rviz_default_plugins/RobotModel
+      Name: RobotModel
+      Enabled: true
+
+  Global Options:
+    Fixed Frame: map
+    Background Color: 48; 48; 48
+
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: nav2_rviz_plugins/GoalTool

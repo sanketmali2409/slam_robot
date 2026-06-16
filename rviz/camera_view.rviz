@@ -1,0 +1,27 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Image
+      Name: USB Camera
+      Topic:
+        Value: /camera/image_raw
+        Depth: 5
+        Reliability Policy: Best Effort
+      Enabled: true
+      Transport Hint: raw
+
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+      Marker Scale: 0.3
+
+  Global Options:
+    Fixed Frame: camera_link
+    Background Color: 48; 48; 48
+    Frame Rate: 30
