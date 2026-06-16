@@ -1,0 +1,92 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+
+Visualization Manager:
+  Class: ""
+  Displays:
+
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 0.5
+      Line Style:
+        Line Width: 0.03
+      Color: 160; 160; 160
+      Plane Cell Count: 20
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+
+    - Class: rviz_default_plugins/Map
+      Name: Map
+      Topic:
+        Value: /map
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+      Alpha: 0.9
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Use Timestamp: false
+
+    - Class: rviz_default_plugins/LaserScan
+      Name: LaserScan
+      Topic:
+        Value: /scan
+        Depth: 5
+        Reliability Policy: Best Effort
+      Enabled: true
+      Size (m): 0.05
+      Style: Flat Squares
+      Color Transformer: FlatColor
+      Color: 255; 0; 0
+      Queue Size: 1
+
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+      Marker Scale: 0.3
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Update Interval: 0.1
+
+    - Class: rviz_default_plugins/RobotModel
+      Name: RobotModel
+      Enabled: true
+      Visual Enabled: true
+      Collision Enabled: false
+
+    - Class: rviz_default_plugins/Odometry
+      Name: Odometry
+      Topic:
+        Value: /odom
+      Enabled: true
+      Keep: 100
+      Length: 0.3
+      Radius: 0.03
+
+  Global Options:
+    Fixed Frame: map
+    Background Color: 48; 48; 48
+    Frame Rate: 30
+    Default Light: true
+
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Scale: 100
+      X: 0
+      Y: 0
