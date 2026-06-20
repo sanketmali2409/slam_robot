@@ -29,6 +29,7 @@ setup(
             'cmd_vel_to_serial_node = slam_robot.cmd_vel_to_serial_node:main',
             'serial_bridge_node     = slam_robot.serial_bridge_node:main',
             'coverage_planner_node  = slam_robot.coverage_planner_node:main',
+            'map_saver_node         = slam_robot.map_saver_node:main',
             'mpu6050_node           = slam_robot.mpu6050_node:main',
             'usb_cam_node           = slam_robot.usb_cam_node:main',
         ],

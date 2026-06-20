@@ -46,6 +46,7 @@ class SerialBridgeNode(Node):
         self.prev_BR    = None
         self.odom_count = 0
         self.enc_count  = 0
+        self.last_odom_time = self.get_clock().now()
 
         # ── ROS ────────────────────────────────────────────────
         self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
@@ -211,13 +212,24 @@ class SerialBridgeNode(Node):
         if 'PONG' in line:
             return
         if 'READY' in line:
-            self.get_logger().info('ESP32 READY')
+            self.get_logger().info('ESP32 READY - Resetting Odometry Baseline')
+            self.prev_FL = None
             return
         if line.startswith('OK:'):
             return
 
     # ── Mecanum Odometry ───────────────────────────────────────
     def compute_and_publish_odom(self, fl, fr, bl, br):
+        # Safeguard: if ESP32 resets or drops power, encoders reset to 0.
+        # This prevents massive map jumps. Max physically possible delta in 0.05s is ~50 ticks.
+        if abs(fl - self.prev_FL) > 300 or abs(fr - self.prev_FR) > 300:
+            self.get_logger().warn('ESP32 brownout/jump detected! Resetting odometry baseline.')
+            self.prev_FL = fl
+            self.prev_FR = fr
+            self.prev_BL = bl
+            self.prev_BR = br
+            return
+
         d_fl = (fl - self.prev_FL) * self.mpp
         d_fr = (fr - self.prev_FR) * self.mpp
         d_bl = (bl - self.prev_BL) * self.mpp
@@ -243,11 +255,17 @@ class SerialBridgeNode(Node):
             math.sin(self.theta),
             math.cos(self.theta))
 
+        now = self.get_clock().now()
+        dt = (now - self.last_odom_time).nanoseconds / 1e9
+        if dt <= 0:
+            dt = 0.1
+        self.last_odom_time = now
+
         self.odom_count += 1
-        self.publish_odom()
+        self.publish_odom(vx / dt, vy / dt, omega / dt)
 
     # ── Publish Odom + TF ──────────────────────────────────────
-    def publish_odom(self):
+    def publish_odom(self, vx_sec, vy_sec, omega_sec):
         now = self.get_clock().now().to_msg()
         qz  = math.sin(self.theta / 2.0)
         qw  = math.cos(self.theta / 2.0)
@@ -276,6 +294,11 @@ class SerialBridgeNode(Node):
         odom.pose.covariance[0]      = 0.001
         odom.pose.covariance[7]      = 0.001
         odom.pose.covariance[35]     = 0.001
+        
+        odom.twist.twist.linear.x    = vx_sec
+        odom.twist.twist.linear.y    = vy_sec
+        odom.twist.twist.angular.z   = omega_sec
+        
         self.odom_pub.publish(odom)
 
     # ── Status Print Every 5s ──────────────────────────────────

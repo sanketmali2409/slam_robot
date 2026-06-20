@@ -72,6 +72,8 @@ class CoveragePlannerNode(Node):
         # ── Subscribers ──────────────────────────────────────────
         self.map_sub = self.create_subscription(
             OccupancyGrid, '/map', self.map_callback, 10)
+        self.start_sub = self.create_subscription(
+            String, '/start_coverage', self.start_callback, 10)
 
         # ── Nav2 Action Client ───────────────────────────────────
         self.nav_client = ActionClient(self, NavigateToPose, '/navigate_to_pose')
@@ -106,6 +108,10 @@ class CoveragePlannerNode(Node):
             if self.auto_start:
                 self.get_logger().info('Auto-start enabled — planning coverage...')
                 self.start_coverage()
+
+    def start_callback(self, msg):
+        self.get_logger().info(f'Received start command: {msg.data}')
+        self.start_coverage()
 
     # ════════════════════════════════════════════════════════════
     #  FREE SPACE EXTRACTION

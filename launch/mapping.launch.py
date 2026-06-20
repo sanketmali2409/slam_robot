@@ -3,7 +3,8 @@ Map Creation Launch File
 """
 import os
 from launch import LaunchDescription
-from launch.actions import TimerAction
+from launch.actions import TimerAction, IncludeLaunchDescription, ExecuteProcess
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
@@ -34,7 +35,7 @@ def generate_launch_description():
         name='serial_bridge_node',
         output='screen',
         parameters=[{
-            'serial_port':   '/dev/ttyUSB0',
+            'serial_port':   '/dev/ttyUSB1',
             'baud_rate':     115200,
             'wheel_radius':  0.03,
             'wheel_base_y':  0.185,
@@ -50,7 +51,7 @@ def generate_launch_description():
         name='rplidar',
         output='screen',
         parameters=[{
-            'serial_port':      '/dev/ttyUSB1',
+            'serial_port':      '/dev/ttyUSB0',
             'serial_baudrate':  115200,
             'frame_id':         'base_laser',
             'angle_compensate': True,
@@ -72,8 +73,18 @@ def generate_launch_description():
             executable='async_slam_toolbox_node',
             name='slam_toolbox',
             output='screen',
-            parameters=[params],
+            parameters=[params, {'use_sim_time': False}],
         )]
+    )
+
+    activate_slam = TimerAction(
+        period=15.0,
+        actions=[
+            ExecuteProcess(
+                cmd=['bash', '-c', 'source /opt/ros/jazzy/setup.bash && ros2 lifecycle set /slam_toolbox configure && sleep 1 && ros2 lifecycle set /slam_toolbox activate'],
+                output='screen'
+            )
+        ]
     )
 
     rviz = TimerAction(
@@ -87,6 +98,28 @@ def generate_launch_description():
         )]
     )
 
+    rosbridge = Node(
+        package='rosbridge_server',
+        executable='rosbridge_websocket',
+        name='rosbridge_websocket',
+        output='screen',
+        parameters=[{'port': 9090}]
+    )
+
+    map_saver = Node(
+        package='slam_robot',
+        executable='map_saver_node',
+        name='map_saver_node',
+        output='screen'
+    )
+
+    coverage_planner = Node(
+        package='slam_robot',
+        executable='coverage_planner_node',
+        name='coverage_planner_node',
+        output='screen'
+    )
+
     return LaunchDescription([
-        rsp, serial, lidar, imu, slam, rviz,
+        rsp, serial, lidar, imu, slam, activate_slam, rviz, rosbridge, map_saver, coverage_planner
     ])
