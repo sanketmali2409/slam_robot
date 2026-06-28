@@ -119,6 +119,20 @@ def generate_launch_description():
         output='screen'
     )
 
+    # ── RViz ─────────────────────────────────────────────────
+    rviz_cfg = os.path.join(pkg, 'rviz', 'nav_view.rviz')
+    # fallback to slam_view if nav_view doesn't exist
+    if not os.path.exists(rviz_cfg):
+        rviz_cfg = os.path.join(pkg, 'rviz', 'slam_view.rviz')
+        
+    rviz = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', rviz_cfg],
+    )
+
     return LaunchDescription([
         map_arg,
         robot_state_publisher,
@@ -128,5 +142,6 @@ def generate_launch_description():
         rosbridge,
         map_repub,
         goal_bridge,
-        imu_node
+        imu_node,
+        rviz
     ])
