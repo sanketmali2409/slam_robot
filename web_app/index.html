@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLAM Robot Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=2">
+    
+    <!-- ROS Web Libraries -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/EaselJS/1.0.2/easeljs.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/eventemitter2@6.4.9/lib/eventemitter2.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/roslibjs/1.1.0/roslib.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/RobotWebTools/ros2djs@0.10.0/build/ros2d.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="glass-panel">
+            <h1>SLAM Robot Dashboard</h1>
+            <div class="status-pill">
+                <div class="status-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+                    <span>Strong</span>
+                </div>
+                <div class="divider"></div>
+                <div class="status-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span id="last-updated">Updated just now</span>
+                </div>
+                <div class="divider"></div>
+                <div class="status-item">
+                    <div id="connection-dot" class="dot disconnected"></div>
+                    <span id="connection-status">Disconnected</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Map Section -->
+            <section class="map-container glass-panel">
+                <div class="panel-header">
+                    <h2>Live Map</h2>
+                    <span class="subtitle">Click-drag to pan, scroll to zoom, click to navigate</span>
+                </div>
+                <div class="canvas-wrapper-relative">
+                    <div id="map-canvas" class="canvas-wrapper">
+                        <!-- ROS2D Canvas will be injected here -->
+                    </div>
+                    
+                    <!-- Map Overlays -->
+                    <div class="map-overlay">
+                        
+                        <!-- Controls Top Right -->
+                        <div class="map-controls-stack">
+                            <button id="btn-zoom-in" class="btn icon-btn map-btn" title="Zoom In">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            </button>
+                            <button id="btn-zoom-out" class="btn icon-btn map-btn" title="Zoom Out">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            </button>
+                            <button id="btn-reset-view" class="btn icon-btn map-btn" title="Reset View">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                            </button>
+                        </div>
+
+                        <!-- Legend Bottom Left -->
+                        <div class="map-legend-pill">
+                            <div class="legend-item"><div class="legend-color unknown"></div>Unknown</div>
+                            <div class="legend-item"><div class="legend-color free"></div>Free Space</div>
+                            <div class="legend-item"><div class="legend-color occupied"></div>Obstacle</div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- Controls Section -->
+            <aside class="controls-container">
+                
+                <!-- Telemetry Panel -->
+                <div class="control-panel glass-panel">
+                    <h2>Live Telemetry</h2>
+                    <div class="telemetry-rows">
+                        
+                        <!-- Battery -->
+                        <div class="telemetry-row">
+                            <div class="telemetry-info">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="23" y1="13" x2="23" y2="11"></line></svg>
+                                <span class="telemetry-label">Battery</span>
+                                <span class="telemetry-value">85<span class="unit">%</span></span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill green" style="width: 85%;"></div></div>
+                        </div>
+                        <div class="telemetry-divider"></div>
+
+                        <!-- Linear Vel -->
+                        <div class="telemetry-row">
+                            <div class="telemetry-info">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                <span class="telemetry-label">Linear Vel</span>
+                                <span class="telemetry-value" id="stat-vel-x">0.00<span class="unit">m/s</span></span>
+                            </div>
+                        </div>
+                        <div class="telemetry-divider"></div>
+
+                        <!-- Angular Vel -->
+                        <div class="telemetry-row">
+                            <div class="telemetry-info">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                                <span class="telemetry-label">Angular Vel</span>
+                                <span class="telemetry-value" id="stat-vel-w">0.00<span class="unit">rad/s</span></span>
+                            </div>
+                        </div>
+                        <div class="telemetry-divider"></div>
+
+                        <!-- Coverage -->
+                        <div class="telemetry-row">
+                            <div class="telemetry-info">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                                <span class="telemetry-label">Coverage Area</span>
+                                <span class="telemetry-value" id="stat-coverage">0.0<span class="unit">m²</span></span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill blue" id="coverage-fill" style="width: 0%;"></div></div>
+                        </div>
+                        <div class="telemetry-divider"></div>
+
+                        <!-- Pose -->
+                        <div class="telemetry-row">
+                            <div class="telemetry-info">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                <span class="telemetry-label">Pose (x, y, θ)</span>
+                                <span class="telemetry-value" id="stat-pose">0.00, 0.00, 0.0°</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Manual Drive Panel -->
+                <div class="control-panel glass-panel">
+                    <h2>Manual Drive</h2>
+                    <p>Use the joystick to manually drive the robot.</p>
+                    <div id="joystick-zone" class="joystick-container"></div>
+                </div>
+
+                <!-- Precise Goal Panel -->
+                <div class="control-panel glass-panel">
+                    <h2>Precise Goal</h2>
+                    <p>Send the robot to exact map coordinates.</p>
+                    <div class="coordinate-inputs">
+                        <div class="input-col">
+                            <label>X (m)</label>
+                            <input type="number" id="goal-x" placeholder="0.0" step="0.1">
+                        </div>
+                        <div class="input-col">
+                            <label>Y (m)</label>
+                            <input type="number" id="goal-y" placeholder="0.0" step="0.1">
+                        </div>
+                        <div class="input-col">
+                            <label>θ (deg)</label>
+                            <input type="number" id="goal-t" placeholder="0.0" step="5">
+                        </div>
+                    </div>
+                    <button id="btn-send-goal" class="btn primary-btn mt-2">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        Send Goal
+                    </button>
+                    <div id="goal-status" class="status-text hidden">Goal sent!</div>
+                </div>
+
+                <!-- Autonomous Coverage Panel -->
+                <div class="control-panel glass-panel">
+                    <h2>Autonomous Coverage</h2>
+                    <p>Sweep the entire mapped area automatically.</p>
+                    <button id="btn-coverage" class="btn primary-btn">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                            <path d="M4 4h16v16H4z"></path>
+                            <path d="M4 8h16M4 12h16M4 16h16"></path>
+                        </svg>
+                        Cover All Area
+                    </button>
+                    <div id="coverage-status" class="status-text hidden">Starting coverage...</div>
+                </div>
+
+                <!-- Save Map Panel -->
+                <div class="control-panel glass-panel">
+                    <h2>Save Map</h2>
+                    <p>Save the current map permanently to the Raspberry Pi.</p>
+                    <div class="input-group">
+                        <input type="text" id="map-name" placeholder="e.g. living_room" />
+                        <button id="btn-save" class="btn secondary-btn">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                <polyline points="7 3 7 8 15 8"></polyline>
+                            </svg>
+                            Save Map
+                        </button>
+                    </div>
+                    <div id="save-status" class="status-text hidden">Map saved successfully!</div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="app.js?v=3"></script>
+</body>
+</html>

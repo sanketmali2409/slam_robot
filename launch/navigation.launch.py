@@ -12,8 +12,9 @@ Usage:
 
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.substitutions import LaunchConfiguration
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
@@ -21,7 +22,6 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
     pkg        = get_package_share_directory('slam_robot')
     nav2_params = os.path.join(pkg, 'config', 'nav2_params.yaml')
-    rviz_config = os.path.join(pkg, 'rviz',  'nav2_view.rviz')
     urdf_file   = os.path.join(pkg, 'urdf',  'robot.urdf.xml')
 
     with open(urdf_file, 'r') as f:
@@ -29,7 +29,7 @@ def generate_launch_description():
 
     map_arg = DeclareLaunchArgument(
         'map',
-        default_value=os.path.expanduser('~/my_room_map.yaml'),
+        default_value=os.path.join(pkg, 'maps', 'room_map.yaml'),
         description='Full path to map yaml file')
 
     # ── Robot State Publisher ────────────────────────────────
@@ -44,19 +44,21 @@ def generate_launch_description():
         }],
     )
 
-    # ── Real Odometry ────────────────────────────────────────
-    real_odom = Node(
+    # ── Serial Bridge (Odom + CMD_VEL) ───────────────────────
+    serial_bridge = Node(
         package='slam_robot',
-        executable='real_odom_node',
-        name='real_odom_node',
+        executable='serial_bridge_node',
+        name='serial_bridge_node',
         output='screen',
+        remappings=[('/cmd_vel', '/cmd_vel_smoothed')],
         parameters=[{
-            'serial_port':   '/dev/ttyUSB1',
+            'serial_port':   '/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0',
             'baud_rate':     115200,
-            'encoder_ppr':   360,
             'wheel_radius':  0.03,
             'wheel_base_y':  0.185,
             'wheel_base_x':  0.0425,
+            'encoder_ppr':   360,
+            'max_speed':     1000,
         }],
     )
 
@@ -67,7 +69,7 @@ def generate_launch_description():
         name='rplidar',
         output='screen',
         parameters=[{
-            'serial_port':      '/dev/ttyUSB0',
+            'serial_port':      '/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0',
             'serial_baudrate':  115200,
             'frame_id':         'base_laser',
             'angle_compensate': True,
@@ -75,47 +77,56 @@ def generate_launch_description():
         }],
     )
 
-    # ── CMD_VEL Serial Bridge ────────────────────────────────
-    serial_bridge = Node(
-        package='slam_robot',
-        executable='cmd_vel_to_serial_node',
-        name='cmd_vel_to_serial_node',
-        output='screen',
-        parameters=[{
-            'serial_port': '/dev/ttyUSB1',
-            'baud_rate':   115200,
-            'max_speed':   200,
-        }],
-    )
-
     # ── Nav2 Bringup ─────────────────────────────────────────
-    nav2 = Node(
-        package='nav2_bringup',
-        executable='bringup_launch.py',
-        name='nav2_bringup',
-        output='screen',
-        parameters=[
-            nav2_params,
-            {'map': LaunchConfiguration('map')},
-            {'use_sim_time': False},
-        ],
+    nav2_bringup_dir = get_package_share_directory('nav2_bringup')
+    nav2 = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
+        launch_arguments={
+            'map': LaunchConfiguration('map'),
+            'params_file': nav2_params,
+            'use_sim_time': 'False',
+        }.items()
     )
 
-    # ── RViz2 ────────────────────────────────────────────────
-    rviz = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
+    # ── Dashboard Connectivity ───────────────────────────────
+    rosbridge = Node(
+        package='rosbridge_server',
+        executable='rosbridge_websocket',
+        name='rosbridge_websocket',
         output='screen',
-        arguments=['-d', rviz_config],
+        parameters=[{'port': 9090}]
+    )
+
+    map_repub = Node(
+        package='slam_robot',
+        executable='map_republisher',
+        name='map_republisher',
+        output='screen'
+    )
+
+    goal_bridge = Node(
+        package='slam_robot',
+        executable='goal_pose_bridge',
+        name='goal_pose_bridge',
+        output='screen'
+    )
+
+    # ── IMU ──────────────────────────────────────────────────
+    imu_node = Node(
+        package='slam_robot',
+        executable='mpu6050_node',
+        name='mpu6050_node',
+        output='screen'
     )
 
     return LaunchDescription([
         map_arg,
         robot_state_publisher,
-        real_odom,
         rplidar,
         serial_bridge,
         nav2,
-        rviz,
+        rosbridge,
+        map_repub,
+        goal_bridge,
+        imu_node
     ])

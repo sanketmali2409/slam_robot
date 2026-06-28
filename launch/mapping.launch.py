@@ -3,7 +3,8 @@ Map Creation Launch File
 """
 import os
 from launch import LaunchDescription
-from launch.actions import TimerAction
+from launch.actions import TimerAction, IncludeLaunchDescription, ExecuteProcess
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
@@ -28,7 +29,7 @@ def generate_launch_description():
         }],
     )
 
-    serial = Node(
+    serial_bridge = Node(
         package='slam_robot',
         executable='serial_bridge_node',
         name='serial_bridge_node',
@@ -72,8 +73,18 @@ def generate_launch_description():
             executable='async_slam_toolbox_node',
             name='slam_toolbox',
             output='screen',
-            parameters=[params],
+            parameters=[params, {'use_sim_time': False}],
         )]
+    )
+
+    activate_slam = TimerAction(
+        period=15.0,
+        actions=[
+            ExecuteProcess(
+                cmd=['bash', '-c', 'sleep 5 && source /opt/ros/jazzy/setup.bash && ros2 lifecycle set /slam_toolbox configure && sleep 2 && ros2 lifecycle set /slam_toolbox activate'],
+                output='screen'
+            )
+        ]
     )
 
     rviz = TimerAction(
@@ -87,6 +98,35 @@ def generate_launch_description():
         )]
     )
 
+    rosbridge = Node(
+        package='rosbridge_server',
+        executable='rosbridge_websocket',
+        name='rosbridge_websocket',
+        output='screen',
+        parameters=[{'port': 9090}]
+    )
+
+    map_saver = Node(
+        package='slam_robot',
+        executable='map_saver_node',
+        name='map_saver_node',
+        output='screen'
+    )
+
+    map_repub = Node(
+        package='slam_robot',
+        executable='map_republisher',
+        name='map_republisher',
+        output='screen'
+    )
+
+    coverage_planner = Node(
+        package='slam_robot',
+        executable='coverage_planner_node',
+        name='coverage_planner_node',
+        output='screen'
+    )
+
     return LaunchDescription([
-        rsp, serial, lidar, imu, slam, rviz,
+        rsp, serial_bridge, lidar, imu, slam, activate_slam, rviz, rosbridge, map_saver, map_repub, coverage_planner
     ])

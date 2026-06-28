@@ -88,6 +88,9 @@ class RealOdomNode(Node):
     #  READ SERIAL FROM ESP32
     # ════════════════════════════════════════════════════════
     def read_serial(self):
+        # Always publish the current odometry state, even if no serial data arrived
+        self.publish_odom()
+
         if self.ser is None:
             return
         try:
@@ -168,8 +171,6 @@ class RealOdomNode(Node):
         self.theta = math.atan2(
             math.sin(self.theta),
             math.cos(self.theta))
-
-        self.publish_odom()
 
     # ════════════════════════════════════════════════════════
     #  PUBLISH /odom + TF
